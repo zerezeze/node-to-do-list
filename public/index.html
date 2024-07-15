@@ -1,0 +1,133 @@
+<!-- public/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        li button {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <form id="task-form">
+            <input type="text" id="task-name" placeholder="New Task" required>
+            <button type="submit">Add Task</button>
+        </form>
+        <ul id="task-list"></ul>
+    </div>
+
+    <script>
+        const loadTasks = async () => {
+            const response = await fetch('/tasks');
+            const tasks = await response.json();
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.textContent = task.name + (task.completed ? ' (Completed)' : '');
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = async () => {
+                    await fetch(`/tasks/${task.id}`, { method: 'DELETE' });
+                    loadTasks();
+                };
+                const completeButton = document.createElement('button');
+                completeButton.textContent = task.completed ? 'Undo' : 'Complete';
+                completeButton.onclick = async () => {
+                    await fetch(`/tasks/${task.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...task, completed: !task.completed }),
+                    });
+                    loadTasks();
+                };
+                li.appendChild(completeButton);
+                li.appendChild(deleteButton);
+                taskList.appendChild(li);
+            });
+        };
+
+        document.getElementById('task-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('task-name').value;
+            await fetch('/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name }),
+            });
+            document.getElementById('task-name').value = '';
+            loadTasks();
+        };
+
+        loadTasks();
+    </script>
+</body>
+</html>
